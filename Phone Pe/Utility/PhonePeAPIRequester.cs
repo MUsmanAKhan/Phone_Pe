@@ -1,15 +1,19 @@
-﻿using System.Text;
+﻿using Newtonsoft.Json;
+using Phone_Pe.Models;
+using System.Text;
 
 namespace Phone_Pe.Utility
 {
     public class PhonePeAPIRequester
     {
         private readonly string _RequestUri = "";
-        public PhonePeAPIRequester(IConfiguration configuration)
+        private readonly ILogger _logger;
+        public PhonePeAPIRequester(IConfiguration configuration, ILogger logger)
         {
             _RequestUri = configuration.GetValue<string>("PhonePeAPIEndPoint");
+            _logger = logger;
         }
-        internal async Task<string> RequestPaymentAsync(string xVerify, string requestBody)
+        internal async Task<OpenIntentResponse> RequestPaymentAsync(string xVerify, string requestBody)
         {
             try
             {
@@ -27,26 +31,19 @@ namespace Phone_Pe.Utility
                 };
                 using (var response = await client.SendAsync(request))
                 {
-                    if (response.IsSuccessStatusCode) // Check the status
-                    {
-                        var body = await response.Content.ReadAsStringAsync(); // Read the response
-                        return body;
-
-                    }
-                    else
-                    {
-                        var body = "Error: " + response.StatusCode;
-                        return body;
-                    }
+                    var body = await response.Content.ReadAsStringAsync();
+                    var status = JsonConvert.DeserializeObject<OpenIntentResponse>(body);
+                    return status;
                 }
             }
             catch (Exception ex)
             {
-                return "Error: " + ex.Message;
+                _logger.LogError("PhonePeAPIRequester.RequestPaymentAsync - " + ex.Message);
+                return new() { code = "500", success = "false", message = "Something went wrong!" };
             }
         }
 
-        internal async Task<string> CheckStatusAsync(string xVerify, string merchantId, string merchantTransactionId)
+        internal async Task<CheckStatusResponse> CheckStatusAsync(string xVerify, string merchantId, string merchantTransactionId)
         {
             try
             {
@@ -64,25 +61,18 @@ namespace Phone_Pe.Utility
                 };
                 using (var response = await client.SendAsync(request))
                 {
-                    if (response.IsSuccessStatusCode) // Check the status
-                    {
-                        var body = await response.Content.ReadAsStringAsync(); // Read the response
-                        return body;
-
-                    }
-                    else
-                    {
-                        var body = "Error: " + response.StatusCode;
-                        return body;
-                    }
+                    var body = await response.Content.ReadAsStringAsync();
+                    var status = JsonConvert.DeserializeObject<CheckStatusResponse>(body);
+                    return status;
                 }
             }
             catch (Exception ex)
             {
-                return "Error: " + ex.Message;
+                _logger.LogError("PhonePeAPIRequester.CheckStatusAsync - " + ex.Message);
+                return new() { code = "500", success = "false", message = "Something went wrong!" };
             }
         }
-        internal async Task<string> RequestRefundAsync(string xVerify, string requestBody)
+        internal async Task<RefundResponse> RequestRefundAsync(string xVerify, string requestBody)
         {
             try
             {
@@ -100,22 +90,28 @@ namespace Phone_Pe.Utility
                 };
                 using (var response = await client.SendAsync(request))
                 {
-                    if (response.IsSuccessStatusCode) // Check the status
-                    {
-                        var body = await response.Content.ReadAsStringAsync(); // Read the response
-                        return body;
+                    //if (response.IsSuccessStatusCode)
+                    //{
+                    var body = await response.Content.ReadAsStringAsync();
+                    var status = JsonConvert.DeserializeObject<RefundResponse>(body);
+                    return status;
 
-                    }
-                    else
-                    {
-                        var body = "Error: " + response.StatusCode;
-                        return body;
-                    }
+                    //}
+                    //else
+                    //{
+                    //    //var body = "Error: " + response.StatusCode;
+                    //    //return body;
+
+                    //    var body = await response.Content.ReadAsStringAsync();
+                    //    var status = JsonConvert.DeserializeObject<RefundResponse>(body);
+                    //    return status;
+                    //}
                 }
             }
             catch (Exception ex)
             {
-                return "Error: " + ex.Message;
+                _logger.LogError("PhonePeAPIRequester.RequestRefundAsync - " + ex.Message);
+                return new() { code = "500", success = "false", message = "Something went wrong!" };
             }
         }
     }
